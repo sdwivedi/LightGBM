@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_GBDT_H_
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
@@ -5,15 +9,21 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
 
-#include "score_updater.hpp"
-
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <mutex>
-#include <map>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include <LightGBM/json11.hpp>
+#include "score_updater.hpp"
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -21,8 +31,7 @@ namespace LightGBM {
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
 */
 class GBDT : public GBDTBase {
-public:
-
+ public:
   /*!
   * \brief Constructor
   */
@@ -40,7 +49,8 @@ public:
   * \param objective_function Training objective function
   * \param training_metrics Training metrics
   */
-  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+  void Init(const Config* gbdt_config, const Dataset* train_data,
+            const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override;
 
   /*!
@@ -66,6 +76,33 @@ public:
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   }
 
+  void ShuffleModels(int start_iter, int end_iter) override {
+    int total_iter = static_cast<int>(models_.size()) / num_tree_per_iteration_;
+    start_iter = std::max(0, start_iter);
+    if (end_iter <= 0) {
+      end_iter = total_iter;
+    }
+    end_iter = std::min(total_iter, end_iter);
+    auto original_models = std::move(models_);
+    std::vector<int> indices(total_iter);
+    for (int i = 0; i < total_iter; ++i) {
+      indices[i] = i;
+    }
+    Random tmp_rand(17);
+    for (int i = start_iter; i < end_iter - 1; ++i) {
+      int j = tmp_rand.NextShort(i + 1, end_iter);
+      std::swap(indices[i], indices[j]);
+    }
+    models_ = std::vector<std::unique_ptr<Tree>>();
+    for (int i = 0; i < total_iter; ++i) {
+      for (int j = 0; j < num_tree_per_iteration_; ++j) {
+        int tree_idx = indices[i] * num_tree_per_iteration_ + j;
+        auto new_tree = std::unique_ptr<Tree>(new Tree(*(original_models[tree_idx].get())));
+        models_.push_back(std::move(new_tree));
+      }
+    }
+  }
+
   /*!
   * \brief Reset the training data
   * \param train_data New Training data
@@ -79,7 +116,7 @@ public:
   * \brief Reset Boosting Config
   * \param gbdt_config Config for boosting
   */
-  void ResetConfig(const BoostingConfig* gbdt_config) override;
+  void ResetConfig(const Config* gbdt_config) override;
 
   /*!
   * \brief Adding a validation dataset
@@ -104,7 +141,7 @@ public:
   * \param hessians nullptr for using default objective, otherwise use self-defined boosting
   * \return True if cannot train any more
   */
-  virtual bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
 
   /*!
   * \brief Rollback one iteration
@@ -140,14 +177,14 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const double* GetTrainingScore(int64_t* out_len) override;
+  const double* GetTrainingScore(int64_t* out_len) override;
 
   /*!
   * \brief Get size of prediction at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \return The size of prediction
   */
-  virtual int64_t GetNumPredictAt(int data_idx) const override {
+  int64_t GetNumPredictAt(int data_idx) const override {
     CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
     data_size_t num_data = train_data_->num_data();
     if (data_idx > 0) {
@@ -181,7 +218,7 @@ public:
         num_preb_in_one_row *= max_iteration;
       }
     } else if (is_pred_contrib) {
-      num_preb_in_one_row = max_feature_idx_ + 2; // +1 for 0-based indexing, +1 for baseline
+      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2);  // +1 for 0-based indexing, +1 for baseline
     }
     return num_preb_in_one_row;
   }
@@ -207,10 +244,11 @@ public:
 
   /*!
   * \brief Dump model to json format string
+  * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
   * \return Json format string of model
   */
-  std::string DumpModel(int num_iteration) const override;
+  std::string DumpModel(int start_iteration, int num_iteration) const override;
 
   /*!
   * \brief Translate model to if-else statement
@@ -229,18 +267,20 @@ public:
 
   /*!
   * \brief Save model to file
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
-  virtual bool SaveModelToFile(int num_iterations, const char* filename) const override;
+  bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const override;
 
   /*!
   * \brief Save model to string
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int num_iterations) const override;
+  std::string SaveModelToString(int start_iteration, int num_iterations) const override;
 
   /*!
   * \brief Restore from a serialized buffer
@@ -319,19 +359,18 @@ public:
   /*!
   * \brief Get Type name of this boosting object
   */
-  virtual const char* SubModelName() const override { return "tree"; }
+  const char* SubModelName() const override { return "tree"; }
 
-protected:
-
+ protected:
   /*!
   * \brief Print eval result and check early stopping
   */
-  bool EvalAndCheckEarlyStopping();
+  virtual bool EvalAndCheckEarlyStopping();
 
   /*!
   * \brief reset config for bagging
   */
-  void ResetBaggingConfig(const BoostingConfig* config, bool is_change_dataset);
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset);
 
   /*!
   * \brief Implement bagging logic
@@ -346,7 +385,17 @@ protected:
   * \param buffer output buffer
   * \return count of left size
   */
-  data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+  data_size_t BaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
+
+
+  /*!
+  * \brief Helper function for bagging, used for multi-threading optimization, balanced sampling
+  * \param start start indice of bagging
+  * \param cnt count
+  * \param buffer output buffer
+  * \return count of left size
+  */
+  data_size_t BalancedBaggingHelper(Random* cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
 
   /*!
   * \brief calculate the object function
@@ -373,14 +422,14 @@ protected:
   */
   std::string OutputMetric(int iter);
 
-  double BoostFromAverage();
+  double BoostFromAverage(int class_id, bool update_scorer);
 
   /*! \brief current iteration */
   int iter_;
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
-  std::unique_ptr<BoostingConfig> gbdt_config_;
+  std::unique_ptr<Config> config_;
   /*! \brief Tree learner, will use this class to learn trees */
   std::unique_ptr<TreeLearner> tree_learner_;
   /*! \brief Objective function */
@@ -395,6 +444,8 @@ protected:
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
+  /*! \brief Only use first metric for early stopping */
+  bool es_first_metric_only_;
   /*! \brief Best iteration(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
   /*! \brief Best score(s) for early stopping */
@@ -447,11 +498,15 @@ protected:
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   std::vector<bool> class_need_train_;
-  std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
   bool need_re_bagging_;
+  bool balanced_bagging_;
+  std::string loaded_parameter_;
+  std::vector<int8_t> monotone_constraints_;
+
+  Json forced_splits_json_;
 };
 
 }  // namespace LightGBM

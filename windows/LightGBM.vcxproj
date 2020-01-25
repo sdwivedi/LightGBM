@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="Projectconfigurations">
     <ProjectConfiguration Include="Debug_mpi|x64">
@@ -197,6 +197,7 @@
     <ClInclude Include="..\include\LightGBM\dataset.h" />
     <ClInclude Include="..\include\LightGBM\dataset_loader.h" />
     <ClInclude Include="..\include\LightGBM\feature_group.h" />
+    <ClInclude Include="..\include\LightGBM\json11.hpp" />
     <ClInclude Include="..\include\LightGBM\lightgbm_R.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
     <ClInclude Include="..\include\LightGBM\metric.h" />
@@ -239,6 +240,7 @@
     <ClInclude Include="..\src\objective\regression_objective.hpp" />
     <ClInclude Include="..\src\objective\multiclass_objective.hpp" />
     <ClInclude Include="..\src\objective\xentropy_objective.hpp" />
+    <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp" />
     <ClInclude Include="..\src\treelearner\data_partition.hpp" />
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />
@@ -256,9 +258,11 @@
     <ClCompile Include="..\src\c_api.cpp" />
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />
+    <ClCompile Include="..\src\io\config_auto.cpp" />
     <ClCompile Include="..\src\io\dataset.cpp" />
     <ClCompile Include="..\src\io\dataset_loader.cpp" />
     <ClCompile Include="..\src\io\file_io.cpp" />
+    <ClCompile Include="..\src\io\json11.cpp" />
     <ClCompile Include="..\src\io\metadata.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />

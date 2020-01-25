@@ -1,21 +1,27 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
 #define LIGHTGBM_UTILS_COMMON_FUN_H_
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <cstdio>
+#include <limits>
 #include <string>
-#include <vector>
-#include <sstream>
-#include <cstdint>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <functional>
-#include <memory>
-#include <iterator>
-#include <type_traits>
 #include <iomanip>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #ifdef _MSC_VER
 #include "intrin.h"
@@ -317,16 +323,16 @@ inline static unsigned CountDecimalDigit32(uint32_t n) {
 
 inline static void Uint32ToStr(uint32_t value, char* buffer) {
   const char kDigitsLut[200] = {
-    '0','0','0','1','0','2','0','3','0','4','0','5','0','6','0','7','0','8','0','9',
-    '1','0','1','1','1','2','1','3','1','4','1','5','1','6','1','7','1','8','1','9',
-    '2','0','2','1','2','2','2','3','2','4','2','5','2','6','2','7','2','8','2','9',
-    '3','0','3','1','3','2','3','3','3','4','3','5','3','6','3','7','3','8','3','9',
-    '4','0','4','1','4','2','4','3','4','4','4','5','4','6','4','7','4','8','4','9',
-    '5','0','5','1','5','2','5','3','5','4','5','5','5','6','5','7','5','8','5','9',
-    '6','0','6','1','6','2','6','3','6','4','6','5','6','6','6','7','6','8','6','9',
-    '7','0','7','1','7','2','7','3','7','4','7','5','7','6','7','7','7','8','7','9',
-    '8','0','8','1','8','2','8','3','8','4','8','5','8','6','8','7','8','8','8','9',
-    '9','0','9','1','9','2','9','3','9','4','9','5','9','6','9','7','9','8','9','9'
+    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
+    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
+    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
+    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',
+    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',
+    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
+    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
+    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',
+    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
+    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'
   };
   unsigned digit = CountDecimalDigit32(value);
   buffer += digit;
@@ -340,9 +346,8 @@ inline static void Uint32ToStr(uint32_t value, char* buffer) {
   }
 
   if (value < 10) {
-    *--buffer = char(value) + '0';
-  }
-  else {
+    *--buffer = static_cast<char>(value) + '0';
+  } else {
     const unsigned i = value << 1;
     *--buffer = kDigitsLut[i + 1];
     *--buffer = kDigitsLut[i];
@@ -358,7 +363,7 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
-inline static void DoubleToStr(double value, char* buffer, size_t 
+inline static void DoubleToStr(double value, char* buffer, size_t
                                #ifdef _MSC_VER
                                buffer_len
                                #endif
@@ -395,18 +400,19 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
 
 template<typename T, bool is_float, bool is_unsign>
 struct __TToStringHelperFast {
-  void operator()(T value, char* buffer, size_t ) const {
+  void operator()(T value, char* buffer, size_t) const {
     Int32ToStr(value, buffer);
   }
 };
 
 template<typename T>
 struct __TToStringHelperFast<T, true, false> {
-  void operator()(T value, char* buffer, size_t 
+  void operator()(T value, char* buffer, size_t
                   #ifdef _MSC_VER
                   buf_len
                   #endif
-                  ) const {
+                  )
+  const {
     #ifdef _MSC_VER
     sprintf_s(buffer, buf_len, "%g", value);
     #else
@@ -417,7 +423,7 @@ struct __TToStringHelperFast<T, true, false> {
 
 template<typename T>
 struct __TToStringHelperFast<T, false, true> {
-  void operator()(T value, char* buffer, size_t ) const {
+  void operator()(T value, char* buffer, size_t) const {
     Uint32ToStr(value, buffer);
   }
 };
@@ -512,7 +518,7 @@ struct __StringToTHelperFast<T, true> {
   const char* operator()(const char*p, T* out) const {
     double tmp = 0.0f;
     auto ret = Atof(p, &tmp);
-    *out= static_cast<T>(tmp);
+    *out = static_cast<T>(tmp);
     return ret;
   }
 };
@@ -546,6 +552,21 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
   return str_buf.str();
 }
 
+template<>
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter) {
+  if (strs.empty()) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf << static_cast<int16_t>(strs[0]);
+  for (size_t i = 1; i < strs.size(); ++i) {
+    str_buf << delimiter;
+    str_buf << static_cast<int16_t>(strs[i]);
+  }
+  return str_buf.str();
+}
+
 template<typename T>
 inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
   if (end - start <= 0) {
@@ -575,7 +596,7 @@ inline static int64_t Pow2RoundUp(int64_t x) {
 }
 
 /*!
- * \brief Do inplace softmax transformaton on p_rec
+ * \brief Do inplace softmax transformation on p_rec
  * \param p_rec The input/output vector of the values.
  */
 inline static void Softmax(std::vector<double>* p_rec) {
@@ -612,39 +633,41 @@ inline static void Softmax(const double* input, double* output, int len) {
 template<typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
-  for (size_t i = 0; i < input.size(); ++i) {
-    ret.push_back(input.at(i).get());
+  for (auto t = input.begin(); t !=input.end(); ++t) {
+    ret.push_back(t->get());
   }
   return ret;
 }
 
 template<typename T1, typename T2>
-inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
-  for (size_t i = start; i < keys.size(); ++i) {
-    arr.emplace_back(keys[i], values[i]);
+  auto& ref_key = *keys;
+  auto& ref_value = *values;
+  for (size_t i = start; i < keys->size(); ++i) {
+    arr.emplace_back(ref_key[i], ref_value[i]);
   }
   if (!is_reverse) {
-    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
       return a.first < b.first;
     });
   } else {
-    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
       return a.first > b.first;
     });
   }
   for (size_t i = start; i < arr.size(); ++i) {
-    keys[i] = arr[i].first;
-    values[i] = arr[i].second;
+    ref_key[i] = arr[i].first;
+    ref_value[i] = arr[i].second;
   }
-
 }
 
 template <typename T>
-inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>& data) {
-  std::vector<T*> ptr(data.size());
-  for (size_t i = 0; i < data.size(); ++i) {
-    ptr[i] = data[i].data();
+inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
+  std::vector<T*> ptr(data->size());
+  auto& ref_data = *data;
+  for (size_t i = 0; i < data->size(); ++i) {
+    ptr[i] = ref_data[i].data();
   }
   return ptr;
 }
@@ -659,9 +682,11 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
 }
 
 inline static double AvoidInf(double x) {
-  if (x >= 1e300) {
+  if (std::isnan(x)) {
+    return 0.0;
+  } else if (x >= 1e300) {
     return 1e300;
-  } else if(x <= -1e300) {
+  } else if (x <= -1e300) {
     return -1e300;
   } else {
     return x;
@@ -669,13 +694,15 @@ inline static double AvoidInf(double x) {
 }
 
 inline static float AvoidInf(float x) {
-	if (x >= 1e38) {
-		return 1e38f;
-	} else if (x <= -1e38) {
-		return -1e38f;
-	} else {
-		return x;
-	}
+  if (std::isnan(x)) {
+    return 0.0f;
+  } else if (x >= 1e38) {
+    return 1e38f;
+  } else if (x <= -1e38) {
+    return -1e38f;
+  } else {
+    return x;
+  }
 }
 
 template<typename _Iter> inline
@@ -700,7 +727,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-  #pragma omp parallel for schedule(static,1)
+  #pragma omp parallel for schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
     size_t left = inner_size*i;
     size_t right = left + inner_size;
@@ -716,7 +743,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   // Recursive merge
   while (s < len) {
     int loop_size = static_cast<int>((len + s * 2 - 1) / (s * 2));
-    #pragma omp parallel for schedule(static,1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < loop_size; ++i) {
       size_t left = i * 2 * s;
       size_t mid = left + s;
@@ -738,7 +765,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
 template <typename T>
 inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
-  auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) { 
+  auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) {
     std::ostringstream os;
     os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
     Log::Fatal(os.str().c_str(), callername, i);
@@ -758,7 +785,7 @@ inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int n
       }
     }
   }
-  if (ny & 1) { // odd
+  if (ny & 1) {  // odd
     if (y[ny - 1] < ymin || y[ny - 1] > ymax) {
       fatal_msg(ny - 1);
     }
@@ -773,12 +800,12 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   T1 maxw;
   T1 sumw;
   int i;
-  if (nw & 1) { // odd
+  if (nw & 1) {  // odd
     minw = w[0];
     maxw = w[0];
     sumw = w[0];
     i = 2;
-  } else { // even
+  } else {  // even
     if (w[0] < w[1]) {
       minw = w[0];
       maxw = w[1];
@@ -808,6 +835,23 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   if (su != nullptr) {
     *su = static_cast<T2>(sumw);
   }
+}
+
+inline static std::vector<uint32_t> EmptyBitset(int n) {
+  int size = n / 32;
+  if (n % 32 != 0) ++size;
+  return std::vector<uint32_t>(size);
+}
+
+template<typename T>
+inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
+  auto& ref_v = *vec;
+  int i1 = val / 32;
+  int i2 = val % 32;
+  if (static_cast<int>(vec->size()) < i1 + 1) {
+    vec->resize(i1 + 1, 0);
+  }
+  ref_v[i1] |= (1 << i2);
 }
 
 template<typename T>
@@ -864,6 +908,42 @@ inline static const char* SkipNewLine(const char* str) {
 template <typename T>
 static int Sign(T x) {
   return (x > T(0)) - (x < T(0));
+}
+
+template <typename T>
+static T SafeLog(T x) {
+  if (x > 0) {
+    return std::log(x);
+  } else {
+    return -INFINITY;
+  }
+}
+
+inline bool CheckASCII(const std::string& s) {
+  for (auto c : s) {
+    if (static_cast<unsigned char>(c) > 127) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool CheckAllowedJSON(const std::string& s) {
+  unsigned char char_code;
+  for (auto c : s) {
+    char_code = static_cast<unsigned char>(c);
+    if (char_code == 34      // "
+        || char_code == 44   // ,
+        || char_code == 58   // :
+        || char_code == 91   // [
+        || char_code == 93   // ]
+        || char_code == 123  // {
+        || char_code == 125  // }
+        ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace Common

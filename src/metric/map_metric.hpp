@@ -1,25 +1,28 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_MAP_METRIC_HPP_
 #define LIGHTGBM_METRIC_MAP_METRIC_HPP_
 
+#include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
-
-#include <LightGBM/metric.h>
-
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <string>
+#include <algorithm>
 #include <sstream>
 #include <vector>
 
 namespace LightGBM {
 
 class MapMetric:public Metric {
-public:
-  explicit MapMetric(const MetricConfig& config) {
+ public:
+  explicit MapMetric(const Config& config) {
     // get eval position
-    for (auto k : config.eval_at) {
-      eval_at_.push_back(static_cast<data_size_t>(k));
-    }
+    eval_at_ = config.eval_at;
+    DCGCalculator::DefaultEvalAt(&eval_at_);
     // get number of threads
     #pragma omp parallel
     #pragma omp master
@@ -44,7 +47,7 @@ public:
       Log::Fatal("For MAP metric, there should be query information");
     }
     num_queries_ = metadata.num_queries();
-    Log::Info("total groups: %d , total data: %d", num_queries_, num_data_);
+    Log::Info("Total groups: %d, total data: %d", num_queries_, num_data_);
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {
@@ -81,8 +84,8 @@ public:
     for (data_size_t i = 0; i < num_data; ++i) {
       sorted_idx.emplace_back(i);
     }
-    std::sort(sorted_idx.begin(), sorted_idx.end(),
-              [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+    std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
+                     [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
 
     int num_hit = 0;
     double sum_ap = 0.0f;
@@ -144,7 +147,7 @@ public:
     return result;
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

@@ -1,14 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_IO_ORDERED_SPARSE_BIN_HPP_
 #define LIGHTGBM_IO_ORDERED_SPARSE_BIN_HPP_
 
 #include <LightGBM/bin.h>
 
-#include <cstring>
-#include <cstdint>
-
-#include <vector>
-#include <mutex>
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 #include "sparse_bin.hpp"
 
@@ -24,7 +28,7 @@ namespace LightGBM {
 */
 template <typename VAL_T>
 class OrderedSparseBin: public OrderedBin {
-public:
+ public:
   /*! \brief Pair to store one bin entry */
   struct SparsePair {
     data_size_t ridx;  // data(row) index
@@ -32,7 +36,7 @@ public:
     SparsePair() : ridx(0), bin(0) {}
   };
 
-  OrderedSparseBin(const SparseBin<VAL_T>* bin_data)
+  explicit OrderedSparseBin(const SparseBin<VAL_T>* bin_data)
     :bin_data_(bin_data) {
     data_size_t cur_pos = 0;
     data_size_t i_delta = -1;
@@ -83,53 +87,15 @@ public:
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
-    const int rest = (end - start) % 4;
-    data_size_t i = start;
-    // use data on current leaf to construct histogram
-    for (; i < end - rest; i += 4) {
+    for (data_size_t i = start; i < end; ++i) {
+      const VAL_T bin = ordered_pair_[i].bin;
+      const auto g = gradient[ordered_pair_[i].ridx];
+      const auto h = hessian[ordered_pair_[i].ridx];
 
-      const VAL_T bin0 = ordered_pair_[i].bin;
-      const VAL_T bin1 = ordered_pair_[i + 1].bin;
-      const VAL_T bin2 = ordered_pair_[i + 2].bin;
-      const VAL_T bin3 = ordered_pair_[i + 3].bin;
-
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      const auto h0 = hessian[ordered_pair_[i].ridx];
-      const auto g1 = gradient[ordered_pair_[i + 1].ridx];
-      const auto h1 = hessian[ordered_pair_[i + 1].ridx];
-      const auto g2 = gradient[ordered_pair_[i + 2].ridx];
-      const auto h2 = hessian[ordered_pair_[i + 2].ridx];
-      const auto g3 = gradient[ordered_pair_[i + 3].ridx];
-      const auto h3 = hessian[ordered_pair_[i + 3].ridx];
-
-      out[bin0].sum_gradients += g0;
-      out[bin1].sum_gradients += g1;
-      out[bin2].sum_gradients += g2;
-      out[bin3].sum_gradients += g3;
-
-      out[bin0].sum_hessians += h0;
-      out[bin1].sum_hessians += h1;
-      out[bin2].sum_hessians += h2;
-      out[bin3].sum_hessians += h3;
-
-      ++out[bin0].cnt;
-      ++out[bin1].cnt;
-      ++out[bin2].cnt;
-      ++out[bin3].cnt;
+      out[bin].sum_gradients += g;
+      out[bin].sum_hessians += h;
+      ++out[bin].cnt;
     }
-
-    for (; i < end; ++i) {
-
-      const VAL_T bin0 = ordered_pair_[i].bin;
-
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      const auto h0 = hessian[ordered_pair_[i].ridx];
-
-      out[bin0].sum_gradients += g0;
-      out[bin0].sum_hessians += h0;
-      ++out[bin0].cnt;
-    }
-
   }
 
   void ConstructHistogram(int leaf, const score_t* gradient,
@@ -137,36 +103,11 @@ public:
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
-    const int rest = (end - start) % 4;
-    data_size_t i = start;
-    // use data on current leaf to construct histogram
-    for (; i < end - rest; i += 4) {
-
-      const VAL_T bin0 = ordered_pair_[i].bin;
-      const VAL_T bin1 = ordered_pair_[i + 1].bin;
-      const VAL_T bin2 = ordered_pair_[i + 2].bin;
-      const VAL_T bin3 = ordered_pair_[i + 3].bin;
-
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      const auto g1 = gradient[ordered_pair_[i + 1].ridx];
-      const auto g2 = gradient[ordered_pair_[i + 2].ridx];
-      const auto g3 = gradient[ordered_pair_[i + 3].ridx];
-
-      out[bin0].sum_gradients += g0;
-      out[bin1].sum_gradients += g1;
-      out[bin2].sum_gradients += g2;
-      out[bin3].sum_gradients += g3;
-
-      ++out[bin0].cnt;
-      ++out[bin1].cnt;
-      ++out[bin2].cnt;
-      ++out[bin3].cnt;
-    }
-    for (; i < end; ++i) {
-      const VAL_T bin0 = ordered_pair_[i].bin;
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      out[bin0].sum_gradients += g0;
-      ++out[bin0].cnt;
+    for (data_size_t i = start; i < end; ++i) {
+      const VAL_T bin = ordered_pair_[i].bin;
+      const auto g = gradient[ordered_pair_[i].ridx];
+      out[bin].sum_gradients += g;
+      ++out[bin].cnt;
     }
   }
 
@@ -196,7 +137,7 @@ public:
   /*! \brief Disable copy */
   OrderedSparseBin<VAL_T>(const OrderedSparseBin<VAL_T>&) = delete;
 
-private:
+ private:
   const SparseBin<VAL_T>* bin_data_;
   /*! \brief Store non-zero pair , group by leaf */
   std::vector<SparsePair> ordered_pair_;

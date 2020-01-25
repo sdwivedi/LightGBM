@@ -1,23 +1,26 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifdef USE_SOCKET
-#include "linkers.h"
 
+#include <LightGBM/config.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <LightGBM/config.h>
-
+#include <string>
+#include <chrono>
 #include <cstring>
-
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <thread>
-#include <chrono>
-#include <string>
+
+#include "linkers.h"
 
 namespace LightGBM {
 
-Linkers::Linkers(NetworkConfig config) {
+Linkers::Linkers(Config config) {
   is_init_ = false;
   // start up socket
   TcpSocket::Startup();
@@ -110,14 +113,13 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.empty()) {
-    Log::Fatal("Cannot find any ip and port. \
-                Please check machine_list_filename or machines parameter.");
+    Log::Fatal("Cannot find any ip and port.\n"
+               "Please check machine_list_filename or machines parameter");
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
     Log::Warning("World size is larger than the machine_list size, change world size to %d", client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
-
 }
 
 void Linkers::TryBind(int port) {
@@ -185,19 +187,22 @@ void Linkers::Construct() {
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
   const int connect_fail_retry_cnt = 20;
-  const int connect_fail_delay_time = 10 * 1000;  // 10s
+  const int connect_fail_retry_first_delay_interval = 200;  // 0.2 s
+  const float connect_fail_retry_delay_factor = 1.3f;
   // start connect
   for (auto it = need_connect.begin(); it != need_connect.end(); ++it) {
     int out_rank = it->first;
     // let smaller rank connect to larger rank
     if (out_rank > rank_) {
       TcpSocket cur_socket;
+      int connect_fail_delay_time = connect_fail_retry_first_delay_interval;
       for (int i = 0; i < connect_fail_retry_cnt; ++i) {
         if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
           break;
         } else {
           Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank, connect_fail_delay_time);
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
+          connect_fail_delay_time = static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
         }
       }
       // send local rank

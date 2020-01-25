@@ -1,19 +1,21 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_R_H_
 #define LIGHTGBM_R_H_
 
-#include <LightGBM/utils/log.h>
-#include <cstdint>
 #include <LightGBM/c_api.h>
+#include <LightGBM/R_object_helper.h>
 
-#include "R_object_helper.h"
-
+#include <cstdint>
 
 /*!
 * \brief get string message of the last error
 *  all functions in this file will return 0 on success
-*  and -1 when an error occured
-* \return err_msg error inforomation
-* \return error inforomation
+*  and -1 when an error occurred
+* \return err_msg error information
+* \return error information
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, LGBM_SE actual_len, LGBM_SE err_msg);
 
@@ -115,7 +117,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
-* \brief save dateset to binary file
+* \brief save dataset to binary file
 * \param handle an instance of dataset
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
@@ -173,6 +175,16 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
+* \brief Update parameters for a Dataset
+* \param handle an instance of data matrix
+* \param parameters parameters
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParam_R(LGBM_SE handle,
+  LGBM_SE params,
+  LGBM_SE call_state);
+
+/*!
 * \brief get number of data.
 * \param handle the handle to the dataset
 * \param out The address to hold number of data
@@ -195,10 +207,10 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetNumFeature_R(LGBM_SE handle,
 // --- start Booster interfaces
 
 /*!
-* \brief create an new boosting learner
+* \brief create a new boosting learner
 * \param train_data training data set
 * \param parameters format: 'key1=value1 key2=value2'
-* \prama out handle of created Booster
+* \param out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCreate_R(LGBM_SE train_data,
@@ -217,7 +229,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterFree_R(LGBM_SE handle,
 /*!
 * \brief load an existing boosting from model file
 * \param filename filename of model
-* \prama out handle of created Booster
+* \param out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
@@ -233,7 +245,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
   LGBM_SE out,
   LGBM_SE call_state);
-  
+
 /*!
 * \brief Merge model in two boosters to first handle
 * \param handle handle, will merge other handle to this
@@ -339,7 +351,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
 * \brief get evaluation for training data and validation data
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
-* \param out_result float arrary contains result
+* \param out_result float array contains result
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterGetEval_R(LGBM_SE handle,
@@ -401,7 +413,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
 * \param is_rawscore
 * \param is_leafidx
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param out_len lenght of prediction
+* \param out_len length of prediction
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
@@ -414,7 +426,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
-* \brief make prediction for an new data set
+* \brief make prediction for a new data set
 *        Note:  should pre-allocate memory for out_result,
 *               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
@@ -513,4 +525,4 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE out_str,
   LGBM_SE call_state);
 
-#endif // LIGHTGBM_R_H_
+#endif  // LIGHTGBM_R_H_

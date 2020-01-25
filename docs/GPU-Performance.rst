@@ -15,11 +15,13 @@ We target AMD Graphics Core Next (GCN) architecture and NVIDIA Maxwell and Pasca
 Most AMD GPUs released after 2012 and NVIDIA GPUs released after 2014 should be supported. We have tested the GPU implementation on the following GPUs:
 
 -  AMD RX 480 with AMDGPU-pro driver 16.60 on Ubuntu 16.10
--  AMD R9 280X (aka Radeon HD 7970) with fglrx driver 15.302.2301 on
-   Ubuntu 16.10
+
+-  AMD R9 280X (aka Radeon HD 7970) with fglrx driver 15.302.2301 on Ubuntu 16.10
+
 -  NVIDIA GTX 1080 with driver 375.39 and CUDA 8.0 on Ubuntu 16.10
--  NVIDIA Titan X (Pascal) with driver 367.48 and CUDA 8.0 on Ubuntu
-   16.04
+
+-  NVIDIA Titan X (Pascal) with driver 367.48 and CUDA 8.0 on Ubuntu 16.04
+
 -  NVIDIA Tesla M40 with driver 375.39 and CUDA 7.5 on Ubuntu 16.04
 
 Using the following hardware is discouraged:
@@ -192,7 +194,7 @@ Further Reading
 You can find more details about the GPU algorithm and benchmarks in the
 following article:
 
-Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boosting`_. arXiv:1706.08359, 2017.
+Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boosting`_. SysML Conference, 2018.
 
 .. _link1: https://archive.ics.uci.edu/ml/datasets/HIGGS
 
@@ -206,6 +208,6 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boos
 
 .. _link6: http://stat-computing.org/dataexpo/2009/
 
-.. _0bb4a82: https://github.com/Microsoft/LightGBM/commit/0bb4a82
+.. _0bb4a82: https://github.com/microsoft/LightGBM/commit/0bb4a82
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359

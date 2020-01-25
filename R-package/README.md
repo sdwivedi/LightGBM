@@ -1,4 +1,4 @@
-LightGBM R Package
+LightGBM R-package
 ==================
 
 Installation
@@ -14,56 +14,44 @@ Note: 32-bit R/Rtools is not supported.
 
 Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
 
-The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
+The default compiler is Visual Studio (or [VS Build Tools](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
 
 For users who wants to install online with GPU or want to choose a specific compiler, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
 
-**Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
+**Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
-#### macOS Preparation
+#### Mac OS Preparation
 
-gcc with OpenMP support must be installed first. Refer to [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos) for installing gcc with OpenMP support.
+You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.16 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
+
+```
+# replace 8 with version of gcc installed on your machine
+export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
+```
 
 ### Install
 
-Install LightGBM R-package with the following command:
+Build and install R-package with the following commands:
 
 ```sh
-git clone --recursive https://github.com/Microsoft/LightGBM
-cd LightGBM/R-package
-# export CXX=g++-7 CC=gcc-7 # for macOS
-R CMD INSTALL --build . --no-multiarch
+git clone --recursive https://github.com/microsoft/LightGBM
+cd LightGBM
+Rscript build_r.R
 ```
 
-Or build a self-contained R package which can be installed afterwards:
+The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script.
 
-```sh
-git clone --recursive https://github.com/Microsoft/LightGBM
-cd LightGBM/R-package
-Rscript build_package.R
-# export CXX=g++-7 CC=gcc-7 # for macOS
-R CMD INSTALL lightgbm_2.0.4.tar.gz --no-multiarch
-``` 
-
-Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
+Note: for the build with Visual Studio/VS Build Tools in Windows, you should use the Windows CMD or Powershell.
 
 Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Linux users might require the appropriate user write permissions for packages.
 
-Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
+Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-You can also install directly from R using the repository with `devtools`:
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
 
-```r
-library(devtools)
-options(devtools.install.args = "--no-multiarch") # if you have 64-bit R only, you can skip this
-install_github("Microsoft/LightGBM", subdir = "R-package")
-```
-
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
-
-When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
+When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
 
 ```r
 library(lightgbm)
@@ -92,16 +80,16 @@ You will need:
 
 In addition, if you are using a Visual Studio precompiled DLL, assuming you do not have Visual Studio installed (if you have it installed, ignore the warnings below):
 
-* Visual Studio 2015/2017 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://go.microsoft.com/fwlink/?LinkId=746572) (you will get an error about MSVCP140.dll missing otherwise)
+* Visual Studio 2015/2017/2019 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://aka.ms/vs/15/release/vc_redist.x64.exe)/[2019](https://aka.ms/vs/16/release/vc_redist.x64.exe) (you will get an error about MSVCP140.dll missing otherwise)
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
-For instance, you can install the R package from LightGBM master commit of GitHub with Visual Studio using the following from R:
+For instance, you can install the R-package from LightGBM master commit of GitHub with Visual Studio using the following from R:
 
 ```r
 lgb.dl(commit = "master",
        compiler = "vs",
-       repo = "https://github.com/Microsoft/LightGBM")
+       repo = "https://github.com/microsoft/LightGBM")
 ```
 
 You may also install using a precompiled dll/lib using the following from R:
@@ -109,7 +97,7 @@ You may also install using a precompiled dll/lib using the following from R:
 ```r
 lgb.dl(commit = "master",
        libdll = "C:\\LightGBM\\windows\\x64\\DLL\\lib_lightgbm.dll", # YOUR PRECOMPILED DLL
-       repo = "https://github.com/Microsoft/LightGBM")
+       repo = "https://github.com/microsoft/LightGBM")
 ```
 
 You may also install online using a LightGBM with proper GPU support using Visual Studio (as an example here) using the following from R:
@@ -117,23 +105,54 @@ You may also install online using a LightGBM with proper GPU support using Visua
 ```r
 lgb.dl(commit = "master",
        compiler = "vs", # Remove this for MinGW + GPU installation
-       repo = "https://github.com/Microsoft/LightGBM",
+       repo = "https://github.com/microsoft/LightGBM",
        use_gpu = TRUE)
 ```
 
 For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
 
-You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
+You may also read [Microsoft/LightGBM#912](https://github.com/microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
 
 Examples
 --------
 
-Please visit [demo](demo):
+Please visit [demo](https://github.com/microsoft/LightGBM/tree/master/R-package/demo):
 
-* [Basic walkthrough of wrappers](demo/basic_walkthrough.R)
-* [Boosting from existing prediction](demo/boost_from_prediction.R)
-* [Early Stopping](demo/early_stopping.R)
-* [Cross Validation](demo/cross_validation.R)
-* [Multiclass Training/Prediction](demo/multiclass.R)
-* [Leaf (in)Stability](demo/leaf_stability.R)
-* [Weight-Parameter Adjustment Relationship](demo/weight_param.R)
+* [Basic walkthrough of wrappers](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/basic_walkthrough.R)
+* [Boosting from existing prediction](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/boost_from_prediction.R)
+* [Early Stopping](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/early_stopping.R)
+* [Cross Validation](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/cross_validation.R)
+* [Multiclass Training/Prediction](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/multiclass.R)
+* [Leaf (in)Stability](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/leaf_stability.R)
+* [Weight-Parameter Adjustment Relationship](https://github.com/microsoft/LightGBM/blob/master/R-package/demo/weight_param.R)
+
+Testing
+-------
+
+The R package's unit tests are run automatically on every commit, via integrations like [Travis CI](https://travis-ci.org/microsoft/LightGBM/) and [Azure DevOps](https://dev.azure.com/lightgbm-ci/lightgbm-ci/_build). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
+
+When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
+
+The example below shows how to generate code coverage for the R package on a macOS or Linux setup, using `gcc-8` to compile `LightGBM`. To adjust for your environment, swap out the 'Install' step with [the relevant code from the instructions above](#install).
+
+```shell
+# Install
+export CXX=/usr/local/bin/g++-8
+export CC=/usr/local/bin/gcc-8
+Rscript build_r.R
+
+# Get coverage
+rm -rf lightgbm_r/build
+Rscript -e " \
+    coverage  <- covr::package_coverage('./lightgbm_r', quiet=FALSE);
+    print(coverage);
+    covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
+    "
+```
+
+External (Unofficial) Repositories
+----------------------------------
+
+Projects listed here are not maintained or endorsed by the `LightGBM` development team, but may offer some features currently missing from the main R package.
+
+* [lightgbm.py](https://github.com/kapsner/lightgbm.py): This R package offers a wrapper built with `reticulate`, a package used to call Python code from R. If you are comfortable with the added installation complexity of installing `lightgbm`'s Python package and the performance cost of passing data between R and Python, you might find that this package offers some features that are not yet available in the native `lightgbm` R package.

@@ -1,11 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_H_
 #define LIGHTGBM_METRIC_H_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/common.h>
 
+#include <string>
 #include <vector>
 
 namespace LightGBM {
@@ -15,7 +22,7 @@ namespace LightGBM {
 *        Metric is used to calculate metric result
 */
 class Metric {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~Metric() {}
 
@@ -31,7 +38,7 @@ public:
 
   virtual double factor_to_bigger_better() const = 0;
   /*!
-  * \brief Calcaluting and printing metric result
+  * \brief Calculating and printing metric result
   * \param score Current prediction score
   */
   virtual std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const = 0;
@@ -47,20 +54,21 @@ public:
   * \param type Specific type of metric
   * \param config Config for metric
   */
-  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
-
+  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const Config& config);
 };
 
 /*!
 * \brief Static class, used to calculate DCG score
 */
 class DCGCalculator {
-public:
+ public:
+  static void DefaultEvalAt(std::vector<int>* eval_at);
+  static void DefaultLabelGain(std::vector<double>* label_gain);
   /*!
   * \brief Initial logic
   * \param label_gain Gain for labels, default is 2^i - 1
   */
-  static void Init(std::vector<double> label_gain);
+  static void Init(const std::vector<double>& label_gain);
 
   /*!
   * \brief Calculate the DCG score at position k
@@ -119,7 +127,7 @@ public:
   */
   inline static double GetDiscount(data_size_t k) { return discount_[k]; }
 
-private:
+ private:
   /*! \brief store gains for different label */
   static std::vector<double> label_gain_;
   /*! \brief store discount score for different position */

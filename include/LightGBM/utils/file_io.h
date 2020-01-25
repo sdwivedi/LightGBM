@@ -1,15 +1,24 @@
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_FILE_IO_H_
 #define LIGHTGBM_UTILS_FILE_IO_H_
 
+#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
 #include <memory>
 
-namespace LightGBM{
+namespace LightGBM {
 
 /*!
  * \brief An interface for writing files from buffers
  */
 struct VirtualFileWriter {
-  virtual ~VirtualFileWriter() {};
+  virtual ~VirtualFileWriter() {}
   /*!
    * \brief Initialize the writer
    * \return True when the file is available for writes
@@ -44,7 +53,7 @@ struct VirtualFileReader {
    * \brief Constructor
    * \param filename Filename of the data
    */
-  virtual ~VirtualFileReader() {};
+  virtual ~VirtualFileReader() {}
   /*!
    * \brief Initialize the reader
    * \return True when the file is available for read

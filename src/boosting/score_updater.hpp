@@ -1,21 +1,25 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 #define LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 
-
-#include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/meta.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/tree_learner.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
+#include <vector>
 
 namespace LightGBM {
 /*!
 * \brief Used to store and update score for data
 */
 class ScoreUpdater {
-public:
+ public:
   /*!
   * \brief Constructor, will pass a const pointer of dataset
   * \param data This class will bind with this data set
@@ -35,7 +39,7 @@ public:
     if (init_score != nullptr) {
       if ((data->metadata().num_init_score() % num_data_) != 0
           || (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
-        Log::Fatal("number of class for initial score error");
+        Log::Fatal("Number of class for initial score error");
       }
       has_init_score_ = true;
       #pragma omp parallel for schedule(static)
@@ -46,23 +50,22 @@ public:
   }
   /*! \brief Destructor */
   ~ScoreUpdater() {
-
   }
 
   inline bool has_init_score() const { return has_init_score_; }
 
   inline void AddScore(double val, int cur_tree_id) {
-    int64_t offset = cur_tree_id * num_data_;
+    const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
     #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < num_data_; ++i) {
+    for (int i = 0; i < num_data_; ++i) {
       score_[offset + i] += val;
     }
   }
 
   inline void MultiplyScore(double val, int cur_tree_id) {
-    int64_t offset = cur_tree_id * num_data_;
+    const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
     #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < num_data_; ++i) {
+    for (int i = 0; i < num_data_; ++i) {
       score_[offset + i] *= val;
     }
   }
@@ -109,7 +112,8 @@ public:
   ScoreUpdater& operator=(const ScoreUpdater&) = delete;
   /*! \brief Disable copy */
   ScoreUpdater(const ScoreUpdater&) = delete;
-private:
+
+ private:
   /*! \brief Number of total data */
   data_size_t num_data_;
   /*! \brief Pointer of data set */

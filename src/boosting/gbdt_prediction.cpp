@@ -1,8 +1,12 @@
-#include "gbdt.h"
-
-#include <LightGBM/utils/openmp_wrapper.h>
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+
+#include "gbdt.h"
 
 namespace LightGBM {
 
@@ -52,7 +56,8 @@ void GBDT::Predict(const double* features, double* output, const PredictionEarly
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       output[k] /= num_iteration_for_pred_;
     }
-  } else if (objective_function_ != nullptr) {
+  }
+  if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);
   }
 }
@@ -63,7 +68,8 @@ void GBDT::PredictByMap(const std::unordered_map<int, double>& features, double*
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       output[k] /= num_iteration_for_pred_;
     }
-  } else if (objective_function_ != nullptr) {
+  }
+  if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);
   }
 }

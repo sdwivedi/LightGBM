@@ -4,7 +4,7 @@ Development Guide
 Algorithms
 ----------
 
-Refer to `Features <./Features.rst>`__ to understand important algorithms used in LightGBM.
+Refer to `Features <./Features.rst>`__ for understanding of important algorithms used in LightGBM.
 
 Classes and Code Structure
 --------------------------
@@ -12,33 +12,33 @@ Classes and Code Structure
 Important Classes
 ~~~~~~~~~~~~~~~~~
 
-+-------------------------+--------------------------------------------------------------------------------------+
-| Class                   | Description                                                                          |
-+=========================+======================================================================================+
-| ``Application``         | The entrance of application, including training and prediction logic                 |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Bin``                 | Data structure used for store feature discrete values (converted from float values)  |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Boosting``            | Boosting interface, current implementation is GBDT and DART                          |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Config``              | Store parameters and configurations                                                  |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Dataset``             | Store information of dataset                                                         |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``DatasetLoader``       | Used to construct dataset                                                            |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Feature``             | Store One column feature                                                             |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Metric``              | Evaluation metrics                                                                   |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Network``             | Network interfaces and communication algorithms                                      |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``ObjectiveFunction``   | Objective function used to train                                                     |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``Tree``                | Store information of tree model                                                      |
-+-------------------------+--------------------------------------------------------------------------------------+
-| ``TreeLearner``         | Used to learn trees                                                                  |
-+-------------------------+--------------------------------------------------------------------------------------+
++-------------------------+----------------------------------------------------------------------------------------+
+| Class                   | Description                                                                            |
++=========================+========================================================================================+
+| ``Application``         | The entrance of application, including training and prediction logic                   |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Bin``                 | Data structure used for storing feature discrete values (converted from float values)  |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Boosting``            | Boosting interface (GBDT, DART, GOSS, etc.)                                            |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Config``              | Stores parameters and configurations                                                   |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Dataset``             | Stores information of dataset                                                          |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``DatasetLoader``       | Used to construct dataset                                                              |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Feature``             | Stores one column feature                                                              |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Metric``              | Evaluation metrics                                                                     |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Network``             | Network interfaces and communication algorithms                                        |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``ObjectiveFunction``   | Objective functions used to train                                                      |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``Tree``                | Stores information of tree model                                                       |
++-------------------------+----------------------------------------------------------------------------------------+
+| ``TreeLearner``         | Used to learn trees                                                                    |
++-------------------------+----------------------------------------------------------------------------------------+
 
 Code Structure
 ~~~~~~~~~~~~~~
@@ -54,7 +54,7 @@ Code Structure
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
 | ./src/boosting      | Implementations of Boosting                                                                                                        |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
-| ./src/io            | Implementations of IO relatived classes, including ``Bin``, ``Config``, ``Dataset``, ``DatasetLoader``, ``Feature`` and ``Tree``   |
+| ./src/io            | Implementations of IO related classes, including ``Bin``, ``Config``, ``Dataset``, ``DatasetLoader``, ``Feature`` and ``Tree``     |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
 | ./src/metric        | Implementations of metrics                                                                                                         |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
@@ -73,16 +73,16 @@ Refer to `docs README <./README.rst>`__.
 C API
 -----
 
-Refere to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__.
+Refer to `C API <./C-API.rst>`__ or the comments in `c\_api.h <https://github.com/microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__ file, from which the documentation is generated.
 
 High Level Language Package
 ---------------------------
 
-See the implementations at `Python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package>`__ and `R-package <https://github.com/Microsoft/LightGBM/tree/master/R-package>`__.
+See the implementations at `Python-package <https://github.com/microsoft/LightGBM/tree/master/python-package>`__ and `R-package <https://github.com/microsoft/LightGBM/tree/master/R-package>`__.
 
 Questions
 ---------
 
 Refer to `FAQ <./FAQ.rst>`__.
 
-Also feel free to open `issues <https://github.com/Microsoft/LightGBM/issues>`__ if you met problems.
+Also feel free to open `issues <https://github.com/microsoft/LightGBM/issues>`__ if you met problems.

@@ -6,6 +6,16 @@
 Welcome to LightGBM's documentation!
 ====================================
 
+**LightGBM** is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
+
+- Faster training speed and higher efficiency.
+- Lower memory usage.
+- Better accuracy.
+- Support of parallel and GPU learning.
+- Capable of handling large-scale data.
+
+For more details, please refer to `Features <./Features.rst>`__.
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
@@ -17,7 +27,9 @@ Welcome to LightGBM's documentation!
    Experiments <Experiments>
    Parameters <Parameters>
    Parameters Tuning <Parameters-Tuning>
+   C API <C-API>
    Python API <Python-API>
+   R API <https://lightgbm.readthedocs.io/en/latest/R/reference/>
    Parallel Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
    Advanced Topics <Advanced-Topics>

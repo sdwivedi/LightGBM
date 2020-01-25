@@ -1,23 +1,21 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/tree.h>
 
-#include <LightGBM/utils/threading.h>
-#include <LightGBM/utils/common.h>
-
 #include <LightGBM/dataset.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/threading.h>
 
-#include <sstream>
-#include <unordered_map>
 #include <functional>
-#include <vector>
-#include <string>
-#include <memory>
 #include <iomanip>
+#include <sstream>
 
 namespace LightGBM {
 
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
-
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
   split_feature_inner_.resize(max_leaves_ - 1);
@@ -28,14 +26,17 @@ Tree::Tree(int max_leaves)
   split_gain_.resize(max_leaves_ - 1);
   leaf_parent_.resize(max_leaves_);
   leaf_value_.resize(max_leaves_);
+  leaf_weight_.resize(max_leaves_);
   leaf_count_.resize(max_leaves_);
   internal_value_.resize(max_leaves_ - 1);
+  internal_weight_.resize(max_leaves_ - 1);
   internal_count_.resize(max_leaves_ - 1);
   leaf_depth_.resize(max_leaves_);
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
   leaf_value_[0] = 0.0f;
+  leaf_weight_[0] = 0.0f;
   leaf_parent_[0] = -1;
   shrinkage_ = 1.0f;
   num_cat_ = 0;
@@ -45,13 +46,12 @@ Tree::Tree(int max_leaves)
 }
 
 Tree::~Tree() {
-
 }
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
-                int left_cnt, int right_cnt, float gain, MissingType missing_type, bool default_left) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+                int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type, bool default_left) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
@@ -64,15 +64,15 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
     SetMissingType(&decision_type_[new_node_idx], 2);
   }
   threshold_in_bin_[new_node_idx] = threshold_bin;
-  threshold_[new_node_idx] = Common::AvoidInf(threshold_double);
+  threshold_[new_node_idx] = threshold_double;
   ++num_leaves_;
   return num_leaves_ - 1;
 }
 
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                            const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                           data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+                           data_size_t left_cnt, data_size_t right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
   SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
@@ -224,10 +224,14 @@ std::string Tree::ToString() const {
     << Common::ArrayToStringFast(right_child_, num_leaves_ - 1) << '\n';
   str_buf << "leaf_value="
     << Common::ArrayToString(leaf_value_, num_leaves_) << '\n';
+  str_buf << "leaf_weight="
+    << Common::ArrayToString(leaf_weight_, num_leaves_) << '\n';
   str_buf << "leaf_count="
     << Common::ArrayToStringFast(leaf_count_, num_leaves_) << '\n';
   str_buf << "internal_value="
     << Common::ArrayToStringFast(internal_value_, num_leaves_ - 1) << '\n';
+  str_buf << "internal_weight="
+    << Common::ArrayToStringFast(internal_weight_, num_leaves_ - 1) << '\n';
   str_buf << "internal_count="
     << Common::ArrayToStringFast(internal_count_, num_leaves_ - 1) << '\n';
   if (num_cat_ > 0) {
@@ -264,7 +268,7 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "{" << '\n';
     str_buf << "\"split_index\":" << index << "," << '\n';
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << '\n';
-    str_buf << "\"split_gain\":" << split_gain_[index] << "," << '\n';
+    str_buf << "\"split_gain\":" << Common::AvoidInf(split_gain_[index]) << "," << '\n';
     if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
       int cat_idx = static_cast<int>(threshold_[index]);
       std::vector<int> cats;
@@ -297,6 +301,7 @@ std::string Tree::NodeToJSON(int index) const {
       str_buf << "\"missing_type\":\"NaN\"," << '\n';
     }
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << '\n';
+    str_buf << "\"internal_weight\":" << internal_weight_[index] << "," << '\n';
     str_buf << "\"internal_count\":" << internal_count_[index] << "," << '\n';
     str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << '\n';
     str_buf << "\"right_child\":" << NodeToJSON(right_child_[index]) << '\n';
@@ -307,6 +312,7 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "{" << '\n';
     str_buf << "\"leaf_index\":" << index << "," << '\n';
     str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << '\n';
+    str_buf << "\"leaf_weight\":" << leaf_weight_[index] << "," << '\n';
     str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
     str_buf << "}";
   }
@@ -344,7 +350,7 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
   }
-  int cat_idx = int(threshold_[node]);
+  int cat_idx = static_cast<int>(threshold_[node]);
   str_buf << "if (int_fval >= 0 && int_fval < 32 * (";
   str_buf << cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx];
   str_buf << ") && (((cat_threshold[" << cat_boundaries_[cat_idx];
@@ -352,10 +358,10 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
   return str_buf.str();
 }
 
-std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
+std::string Tree::ToIfElse(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
   str_buf << "double PredictTree" << index;
-  if (is_predict_leaf_index) {
+  if (predict_leaf_index) {
     str_buf << "Leaf";
   }
   str_buf << "(const double* arr) { ";
@@ -375,13 +381,13 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     if (num_cat_ > 0) {
       str_buf << "int int_fval = 0; ";
     }
-    str_buf << NodeToIfElse(0, is_predict_leaf_index);
+    str_buf << NodeToIfElse(0, predict_leaf_index);
   }
   str_buf << " }" << '\n';
 
-  //Predict func by Map to ifelse
+  // Predict func by Map to ifelse
   str_buf << "double PredictTree" << index;
-  if (is_predict_leaf_index) {
+  if (predict_leaf_index) {
     str_buf << "LeafByMap";
   } else {
     str_buf << "ByMap";
@@ -403,14 +409,14 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     if (num_cat_ > 0) {
       str_buf << "int int_fval = 0; ";
     }
-    str_buf << NodeToIfElseByMap(0, is_predict_leaf_index);
+    str_buf << NodeToIfElseByMap(0, predict_leaf_index);
   }
   str_buf << " }" << '\n';
 
   return str_buf.str();
 }
 
-std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
+std::string Tree::NodeToIfElse(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
@@ -422,15 +428,15 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
       str_buf << CategoricalDecisionIfElse(index);
     }
     // left subtree
-    str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElse(left_child_[index], predict_leaf_index);
     str_buf << " } else { ";
     // right subtree
-    str_buf << NodeToIfElse(right_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElse(right_child_[index], predict_leaf_index);
     str_buf << " }";
   } else {
     // leaf
     str_buf << "return ";
-    if (is_predict_leaf_index) {
+    if (predict_leaf_index) {
       str_buf << ~index;
     } else {
       str_buf << leaf_value_[~index];
@@ -441,7 +447,7 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
   return str_buf.str();
 }
 
-std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const {
+std::string Tree::NodeToIfElseByMap(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
@@ -453,15 +459,15 @@ std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const
       str_buf << CategoricalDecisionIfElse(index);
     }
     // left subtree
-    str_buf << NodeToIfElseByMap(left_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElseByMap(left_child_[index], predict_leaf_index);
     str_buf << " } else { ";
     // right subtree
-    str_buf << NodeToIfElseByMap(right_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElseByMap(right_child_[index], predict_leaf_index);
     str_buf << " }";
   } else {
     // leaf
     str_buf << "return ";
-    if (is_predict_leaf_index) {
+    if (predict_leaf_index) {
       str_buf << ~index;
     } else {
       str_buf << leaf_value_[~index];
@@ -475,12 +481,12 @@ std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const
 Tree::Tree(const char* str, size_t* used_len) {
   auto p = str;
   std::unordered_map<std::string, std::string> key_vals;
-  const int max_num_line = 15;
+  const int max_num_line = 17;
   int read_line = 0;
   while (read_line < max_num_line) {
     if (*p == '\r' || *p == '\n') break;
     auto start = p;
-    while (*p != '=') ++p; 
+    while (*p != '=') ++p;
     std::string key(start, p - start);
     ++p;
     start = p;
@@ -493,13 +499,13 @@ Tree::Tree(const char* str, size_t* used_len) {
   *used_len = p - str;
 
   if (key_vals.count("num_leaves") <= 0) {
-    Log::Fatal("Tree model should contain num_leaves field.");
+    Log::Fatal("Tree model should contain num_leaves field");
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
 
   if (key_vals.count("num_cat") <= 0) {
-    Log::Fatal("Tree model should contain num_cat field.");
+    Log::Fatal("Tree model should contain num_cat field");
   }
 
   Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
@@ -508,6 +514,12 @@ Tree::Tree(const char* str, size_t* used_len) {
     leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], num_leaves_);
   } else {
     Log::Fatal("Tree model string format error, should contain leaf_value field");
+  }
+
+  if (key_vals.count("shrinkage")) {
+    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
+  } else {
+    shrinkage_ = 1.0f;
   }
 
   if (num_leaves_ <= 1) { return; }
@@ -554,6 +566,18 @@ Tree::Tree(const char* str, size_t* used_len) {
     internal_value_.resize(num_leaves_ - 1);
   }
 
+  if (key_vals.count("internal_weight")) {
+    internal_weight_ = Common::StringToArrayFast<double>(key_vals["internal_weight"], num_leaves_ - 1);
+  } else {
+    internal_weight_.resize(num_leaves_ - 1);
+  }
+
+  if (key_vals.count("leaf_weight")) {
+    leaf_weight_ = Common::StringToArrayFast<double>(key_vals["leaf_weight"], num_leaves_);
+  } else {
+    leaf_weight_.resize(num_leaves_);
+  }
+
   if (key_vals.count("leaf_count")) {
     leaf_count_ = Common::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
   } else {
@@ -576,14 +600,8 @@ Tree::Tree(const char* str, size_t* used_len) {
     if (key_vals.count("cat_threshold")) {
       cat_threshold_ = Common::StringToArrayFast<uint32_t>(key_vals["cat_threshold"], cat_boundaries_.back());
     } else {
-      Log::Fatal("Tree model should contain cat_threshold field.");
+      Log::Fatal("Tree model should contain cat_threshold field");
     }
-  }
-
-  if (key_vals.count("shrinkage")) {
-    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
-  } else {
-    shrinkage_ = 1.0f;
   }
   max_depth_ = -1;
 }
@@ -652,7 +670,6 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
                     int node, int unique_depth,
                     PathElement *parent_unique_path, double parent_zero_fraction,
                     double parent_one_fraction, int parent_feature_index) const {
-
   // extend the unique path
   PathElement* unique_path = parent_unique_path + unique_depth;
   if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);

@@ -5,30 +5,40 @@ This is a guide for parallel learning of LightGBM.
 
 Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
+**List of external libraries in which LightGBM can be used in a distributed fashion**
+
+-  `Dask-LightGBM`_ allows to create ML workflow on Dask distributed data structures.
+
+-  `MMLSpark`_ integrates LightGBM into Apache Spark ecosystem.
+   `The following example`_ demonstrates how easy it's possible to utilize the great power of Spark.
+
+-  `Kubeflow Fairing`_ suggests using LightGBM in a Kubernetes cluster.
+   `These examples`_ help to get started with LightGBM in a hybrid cloud environment.
+
 Choose Appropriate Parallel Algorithm
 -------------------------------------
 
-LightGBM provides 2 parallel learning algorithms now.
+LightGBM provides 3 parallel learning algorithms now.
 
-+--------------------------+---------------------------+
-| **Parallel Algorithm**   | **How to Use**            |
-+==========================+===========================+
-| Data parallel            | ``tree_learner=data``     |
-+--------------------------+---------------------------+
-| Feature parallel         | ``tree_learner=feature``  |
-+--------------------------+---------------------------+
-| Voting parallel          | ``tree_learner=voting``   |
-+--------------------------+---------------------------+
++--------------------+---------------------------+
+| Parallel Algorithm | How to Use                |
++====================+===========================+
+| Data parallel      | ``tree_learner=data``     |
++--------------------+---------------------------+
+| Feature parallel   | ``tree_learner=feature``  |
++--------------------+---------------------------+
+| Voting parallel    | ``tree_learner=voting``   |
++--------------------+---------------------------+
 
 These algorithms are suited for different scenarios, which is listed in the following table:
 
-+-------------------------+----------------------+----------------------+
-|                         | **#data is small**   | **#data is large**   |
-+=========================+======================+======================+
-| **#feature is small**   | Feature Parallel     | Data Parallel        |
-+-------------------------+----------------------+----------------------+
-| **#feature is large**   | Feature Parallel     | Voting Parallel      |
-+-------------------------+----------------------+----------------------+
++-------------------------+-------------------+-----------------+
+|                         | #data is small    | #data is large  |
++=========================+===================+=================+
+| **#feature is small**   | Feature Parallel  | Data Parallel   |
++-------------------------+-------------------+-----------------+
+| **#feature is large**   | Feature Parallel  | Voting Parallel |
++-------------------------+-------------------+-----------------+
 
 More details about these parallel algorithms can be found in `optimization in parallel learning <./Features.rst#optimization-in-parallel-learning>`__.
 
@@ -122,6 +132,17 @@ Example
 
 -  `A simple parallel example`_
 
-.. _here: https://blogs.technet.microsoft.com/windowshpc/2015/02/02/how-to-compile-and-run-a-simple-ms-mpi-program/
+.. _Dask-LightGBM: https://github.com/dask/dask-lightgbm
 
-.. _A simple parallel example: https://github.com/Microsoft/lightgbm/tree/master/examples/parallel_learning
+.. _MMLSpark: https://aka.ms/spark
+
+.. _The following example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+
+.. _Kubeflow Fairing: https://www.kubeflow.org/docs/fairing/fairing-overview
+
+.. _These examples: https://github.com/kubeflow/fairing/tree/master/examples/lightgbm
+
+
+.. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
+
+.. _A simple parallel example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning

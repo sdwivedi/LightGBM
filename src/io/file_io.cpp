@@ -1,14 +1,20 @@
-#include <LightGBM/utils/log.h>
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/utils/file_io.h>
+
+#include <LightGBM/utils/log.h>
 
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
+
 #ifdef USE_HDFS
 #include <hdfs.h>
 #endif
 
-namespace LightGBM{
+namespace LightGBM {
 
 struct LocalFile : VirtualFileReader, VirtualFileWriter {
   LocalFile(const std::string& filename, const std::string& mode) : filename_(filename), mode_(mode) {}
@@ -42,15 +48,17 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
     return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
   }
 
-private:
+ private:
   FILE* file_ = NULL;
   const std::string filename_;
   const std::string mode_;
 };
 
-const std::string kHdfsProto = "hdfs://";
+const char* kHdfsProto = "hdfs://";
 
 #ifdef USE_HDFS
+const size_t kHdfsProtoLength = static_cast<size_t>(strlen(kHdfsProto));
+
 struct HDFSFile : VirtualFileReader, VirtualFileWriter {
   HDFSFile(const std::string& filename, int flags) : filename_(filename), flags_(flags) {}
   ~HDFSFile() {
@@ -86,13 +94,13 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
     return FileOperation<const void*>(data, bytes, &hdfsWrite);
   }
 
-private:
+ private:
   template <typename BufferType>
   using fileOp = tSize(*)(hdfsFS, hdfsFile, BufferType, tSize);
 
   template <typename BufferType>
   inline size_t FileOperation(BufferType data, size_t bytes, fileOp<BufferType> op) const {
-    char* buffer = (char *)data;
+    char* buffer = const_cast<char*>(static_cast<const char*>(data));
     size_t remain = bytes;
     while (remain != 0) {
       size_t nmax = static_cast<size_t>(std::numeric_limits<tSize>::max());
@@ -104,19 +112,19 @@ private:
       } else if (ret == 0) {
         break;
       } else if (errno != EINTR) {
-        Log::Fatal("Failed hdfs file operation [%s]", strerror(errno));
+        Log::Fatal("Failed HDFS file operation [%s]", strerror(errno));
       }
     }
     return bytes - remain;
   }
 
   static hdfsFS GetHDFSFileSystem(const std::string& uri) {
-    size_t end = uri.find("/", kHdfsProto.length());
+    size_t end = uri.find("/", kHdfsProtoLength);
     if (uri.find(kHdfsProto) != 0 || end == std::string::npos) {
-      Log::Warning("Bad hdfs uri, no namenode found [%s]", uri.c_str());
+      Log::Warning("Bad HDFS uri, no namenode found [%s]", uri.c_str());
       return NULL;
     }
-    std::string hostport = uri.substr(kHdfsProto.length(), end - kHdfsProto.length());
+    std::string hostport = uri.substr(kHdfsProtoLength, end - kHdfsProtoLength);
     if (fs_cache_.count(hostport) == 0) {
       fs_cache_[hostport] = MakeHDFSFileSystem(hostport);
     }
@@ -131,7 +139,7 @@ private:
     iss >> port;
     hdfsFS fs = iss.eof() ? hdfsConnect(host.c_str(), port) : NULL;
     if (fs == NULL) {
-      Log::Warning("Could not connect to hdfs namenode [%s]", hostport.c_str());
+      Log::Warning("Could not connect to HDFS namenode [%s]", hostport.c_str());
     }
     return fs;
   }
@@ -147,8 +155,8 @@ std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ = std::unordered_map
 
 #define WITH_HDFS(x) x
 #else
-#define WITH_HDFS(x) Log::Fatal("HDFS Support not enabled.")
-#endif // USE_HDFS
+#define WITH_HDFS(x) Log::Fatal("HDFS support is not enabled")
+#endif  // USE_HDFS
 
 std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {

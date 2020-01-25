@@ -1,18 +1,23 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_LOG_H_
 #define LIGHTGBM_UTILS_LOG_H_
 
-#include <iostream>
+#include <string>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
-#include <cstdarg>
 #include <cstring>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 
 namespace LightGBM {
 
 #if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread) 
+#define THREAD_LOCAL __declspec(thread)
 #else
 #define THREAD_LOCAL thread_local
 #endif
@@ -41,7 +46,7 @@ enum class LogLevel: int {
 * \brief A static Log class
 */
 class Log {
-public:
+ public:
   /*!
   * \brief Resets the minimal log level. It is INFO by default.
   * \param level The new minimal log level.
@@ -83,8 +88,7 @@ public:
     throw std::runtime_error(std::string(str_buf));
   }
 
-private:
-
+ private:
   static void Write(LogLevel level, const char* level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
       // write to STDOUT
@@ -98,7 +102,6 @@ private:
   // a trick to use static variable in header file.
   // May be not good, but avoid to use an additional cpp file
   static LogLevel& GetLevel() { static THREAD_LOCAL LogLevel level = LogLevel::Info; return level; }
-
 };
 
 }  // namespace LightGBM

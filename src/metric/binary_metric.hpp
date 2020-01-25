@@ -1,14 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_BINARY_METRIC_HPP_
 #define LIGHTGBM_METRIC_BINARY_METRIC_HPP_
 
-#include <LightGBM/utils/log.h>
-#include <LightGBM/utils/common.h>
-
 #include <LightGBM/metric.h>
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
 
+#include <string>
 #include <algorithm>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 namespace LightGBM {
 
@@ -18,13 +22,11 @@ namespace LightGBM {
 */
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
-public:
-  explicit BinaryMetric(const MetricConfig&) {
-
+ public:
+  explicit BinaryMetric(const Config&) {
   }
 
   virtual ~BinaryMetric() {
-
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -94,7 +96,7 @@ public:
     return std::vector<double>(1, loss);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -111,8 +113,8 @@ private:
 * \brief Log loss metric for binary classification task.
 */
 class BinaryLoglossMetric: public BinaryMetric<BinaryLoglossMetric> {
-public:
-  explicit BinaryLoglossMetric(const MetricConfig& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
+ public:
+  explicit BinaryLoglossMetric(const Config& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
     if (label <= 0) {
@@ -135,8 +137,8 @@ public:
 * \brief Error rate metric for binary classification task.
 */
 class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
-public:
-  explicit BinaryErrorMetric(const MetricConfig& config) :BinaryMetric<BinaryErrorMetric>(config) {}
+ public:
+  explicit BinaryErrorMetric(const Config& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
     if (prob <= 0.5f) {
@@ -155,9 +157,8 @@ public:
 * \brief Auc Metric for binary classification task.
 */
 class AUCMetric: public Metric {
-public:
-  explicit AUCMetric(const MetricConfig&) {
-
+ public:
+  explicit AUCMetric(const Config&) {
   }
 
   virtual ~AUCMetric() {
@@ -249,7 +250,7 @@ public:
     return std::vector<double>(1, auc);
   }
 
-private:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

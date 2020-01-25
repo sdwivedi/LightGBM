@@ -1,12 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_H_
 #define LIGHTGBM_BOOSTING_H_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/meta.h>
 
-#include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 
@@ -20,7 +25,7 @@ struct PredictionEarlyStopInstance;
 * \brief The interface for Boosting
 */
 class LIGHTGBM_EXPORT Boosting {
-public:
+ public:
   /*! \brief virtual destructor */
   virtual ~Boosting() {}
 
@@ -32,7 +37,7 @@ public:
   * \param training_metrics Training metric
   */
   virtual void Init(
-    const BoostingConfig* config,
+    const Config* config,
     const Dataset* train_data,
     const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) = 0;
@@ -44,10 +49,15 @@ public:
   */
   virtual void MergeFrom(const Boosting* other) = 0;
 
+  /*!
+  * \brief Shuffle Existing Models
+  */
+  virtual void ShuffleModels(int start_iter, int end_iter) = 0;
+
   virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                                  const std::vector<const Metric*>& training_metrics) = 0;
 
-  virtual void ResetConfig(const BoostingConfig* config) = 0;
+  virtual void ResetConfig(const Config* config) = 0;
 
 
 
@@ -163,10 +173,11 @@ public:
 
   /*!
   * \brief Dump model to json format string
+  * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
   * \return Json format string of model
   */
-  virtual std::string DumpModel(int num_iteration) const = 0;
+  virtual std::string DumpModel(int start_iteration, int num_iteration) const = 0;
 
   /*!
   * \brief Translate model to if-else statement
@@ -185,19 +196,21 @@ public:
 
   /*!
   * \brief Save model to file
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   * \return true if succeeded
   */
-  virtual bool SaveModelToFile(int num_iterations, const char* filename) const = 0;
+  virtual bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const = 0;
 
   /*!
   * \brief Save model to string
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int num_iterations) const = 0;
+  virtual std::string SaveModelToString(int start_iteration, int num_iterations) const = 0;
 
   /*!
   * \brief Restore from a serialized string
@@ -283,11 +296,10 @@ public:
   * \return The boosting object
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
-
 };
 
 class GBDTBase : public Boosting {
-public:
+ public:
   virtual double GetLeafValue(int tree_idx, int leaf_idx) const = 0;
   virtual void SetLeafValue(int tree_idx, int leaf_idx, double val) = 0;
 };

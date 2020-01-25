@@ -1,65 +1,60 @@
 Python API
 ==========
 
+.. currentmodule:: lightgbm
+
 Data Structure API
 ------------------
 
-.. autoclass:: lightgbm.Dataset
-    :members:
-    :show-inheritance:
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autoclass:: lightgbm.Booster
-    :members:
-    :show-inheritance:
-
+    Dataset
+    Booster
 
 Training API
 ------------
 
-.. autofunction:: lightgbm.train
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autofunction:: lightgbm.cv
-
+    train
+    cv
 
 Scikit-learn API
 ----------------
 
-.. autoclass:: lightgbm.LGBMModel
-    :members:
-    :show-inheritance:
+.. warning::
 
-.. autoclass:: lightgbm.LGBMClassifier
-    :members:
-    :show-inheritance:
+    The last supported version of scikit-learn is ``0.21.3``. Our estimators are incompatible with newer versions.
 
-.. autoclass:: lightgbm.LGBMRegressor
-    :members:
-    :show-inheritance:
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autoclass:: lightgbm.LGBMRanker
-    :members:
-    :show-inheritance:
-
+    LGBMModel
+    LGBMClassifier
+    LGBMRegressor
+    LGBMRanker
 
 Callbacks
 ---------
 
-.. autofunction:: lightgbm.early_stopping
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autofunction:: lightgbm.print_evaluation
-
-.. autofunction:: lightgbm.record_evaluation
-
-.. autofunction:: lightgbm.reset_parameter
-
+    early_stopping
+    print_evaluation
+    record_evaluation
+    reset_parameter
 
 Plotting
 --------
 
-.. autofunction:: lightgbm.plot_importance
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autofunction:: lightgbm.plot_metric
-
-.. autofunction:: lightgbm.plot_tree
-
-.. autofunction:: lightgbm.create_tree_digraph
+    plot_importance
+    plot_split_value_histogram
+    plot_metric
+    plot_tree
+    create_tree_digraph

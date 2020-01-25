@@ -1,36 +1,38 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_IO_PARSER_HPP_
 #define LIGHTGBM_IO_PARSER_HPP_
 
+#include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
-#include <LightGBM/dataset.h>
-
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace LightGBM {
 
 class CSVParser: public Parser {
-public:
-  explicit CSVParser(int label_idx)
-    :label_idx_(label_idx) {
+ public:
+  explicit CSVParser(int label_idx, int total_columns)
+    :label_idx_(label_idx), total_columns_(total_columns) {
   }
   inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
-    int bias = 0;
+    int offset = 0;
     *out_label = 0.0f;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
-        bias = -1;
-      }
-      else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        out_features->emplace_back(idx + bias, val);
+        offset = -1;
+      } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
+        out_features->emplace_back(idx + offset, val);
       }
       ++idx;
       if (*str == ',') {
@@ -40,27 +42,33 @@ public:
       }
     }
   }
-private:
+
+  inline int NumFeatures() const override {
+    return total_columns_ - (label_idx_ >= 0);
+  }
+
+ private:
   int label_idx_ = 0;
+  int total_columns_ = -1;
 };
 
 class TSVParser: public Parser {
-public:
-  explicit TSVParser(int label_idx)
-    :label_idx_(label_idx) {
+ public:
+  explicit TSVParser(int label_idx, int total_columns)
+    :label_idx_(label_idx), total_columns_(total_columns) {
   }
   inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
-    int bias = 0;
+    int offset = 0;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
-        bias = -1;
+        offset = -1;
       } else if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
-        out_features->emplace_back(idx + bias, val);
+        out_features->emplace_back(idx + offset, val);
       }
       ++idx;
       if (*str == '\t') {
@@ -70,14 +78,20 @@ public:
       }
     }
   }
-private:
+
+  inline int NumFeatures() const override {
+    return total_columns_ - (label_idx_ >= 0);
+  }
+
+ private:
   int label_idx_ = 0;
+  int total_columns_ = -1;
 };
 
 class LibSVMParser: public Parser {
-public:
-  explicit LibSVMParser(int label_idx)
-    :label_idx_(label_idx) {
+ public:
+  explicit LibSVMParser(int label_idx, int total_columns)
+    :label_idx_(label_idx), total_columns_(total_columns) {
     if (label_idx > 0) {
       Log::Fatal("Label should be the first column in a LibSVM file");
     }
@@ -104,8 +118,14 @@ public:
       str = Common::SkipSpaceAndTab(str);
     }
   }
-private:
+
+  inline int NumFeatures() const override {
+    return total_columns_;
+  }
+
+ private:
   int label_idx_ = 0;
+  int total_columns_ = -1;
 };
 
 }  // namespace LightGBM

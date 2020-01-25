@@ -1,37 +1,42 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
 
+#include <LightGBM/utils/log.h>
+
+#include <string>
+#include <cerrno>
+#include <cstdlib>
+#include <unordered_set>
+
 #if defined(_WIN32)
+
 #ifdef _MSC_VER
 #define NOMINMAX
 #endif
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 
 #else
 
-#include <fcntl.h>
-#include <netdb.h>
-#include <cerrno>
-#include <unistd.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
+#include <fcntl.h>
 #include <ifaddrs.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#endif
-
-#include <LightGBM/utils/log.h>
-
-#include <cstdlib>
-
-#include <unordered_set>
-#include <string>
+#endif  // defined(_WIN32)
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
@@ -51,8 +56,7 @@ const int INVALID_SOCKET = -1;
 #ifdef _WIN32
 #ifndef _MSC_VER
 // not using visual studio in windows
-inline int inet_pton(int af, const char *src, void *dst)
-{
+inline int inet_pton(int af, const char *src, void *dst) {
   struct sockaddr_storage ss;
   int size = sizeof(ss);
   char src_copy[INET6_ADDRSTRLEN + 1];
@@ -87,7 +91,7 @@ const bool kNoDelay = true;
 }
 
 class TcpSocket {
-public:
+ public:
   TcpSocket() {
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
@@ -119,16 +123,16 @@ public:
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
-    
+
     if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
-      Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least.");
+      Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least");
     }
-    
+
     if (setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
-      Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least.");
+      Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least");
     }
     if (setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay)) != 0) {
-      Log::Warning("Set TCP_NODELAY failed.");
+      Log::Warning("Set TCP_NODELAY failed");
     }
   }
 
@@ -174,7 +178,7 @@ public:
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD dwRetVal = 0;
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
-    pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
+    pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(sizeof(IP_ADAPTER_INFO)));
     if (pAdapterInfo == NULL) {
       Log::Fatal("GetAdaptersinfo error: allocating memory");
     }
@@ -182,7 +186,7 @@ public:
     // the necessary size into the ulOutBufLen variable
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
       FREE(pAdapterInfo);
-      pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
+      pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(ulOutBufLen));
       if (pAdapterInfo == NULL) {
         Log::Fatal("GetAdaptersinfo error: allocating memory");
       }
@@ -292,7 +296,7 @@ public:
     }
   }
 
-private:
+ private:
   SOCKET sockfd_;
 };
 

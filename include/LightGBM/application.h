@@ -1,11 +1,15 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_APPLICATION_H_
 #define LIGHTGBM_APPLICATION_H_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/meta.h>
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace LightGBM {
 
@@ -19,21 +23,20 @@ class Metric;
 * \brief The main entrance of LightGBM. this application has two tasks:
 *        Train and Predict.
 *        Train task will train a new model
-*        Predict task will predict the scores of test data using exsisting model,
+*        Predict task will predict the scores of test data using existing model,
 *        and save the score to disk.
 */
 class Application {
-public:
+ public:
   Application(int argc, char** argv);
 
   /*! \brief Destructor */
   ~Application();
 
-  /*! \brief To call this funciton to run application*/
+  /*! \brief To call this function to run application*/
   inline void Run();
 
-private:
-
+ private:
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
 
@@ -56,7 +59,7 @@ private:
   void ConvertModel();
 
   /*! \brief All configs */
-  OverallConfig config_;
+  Config config_;
   /*! \brief Training data */
   std::unique_ptr<Dataset> train_data_;
   /*! \brief Validation data */
@@ -73,10 +76,10 @@ private:
 
 
 inline void Application::Run() {
-  if (config_.task_type == TaskType::kPredict || config_.task_type == TaskType::KRefitTree) {
+  if (config_.task == TaskType::kPredict || config_.task == TaskType::KRefitTree) {
     InitPredict();
     Predict();
-  } else if (config_.task_type == TaskType::kConvertModel) {
+  } else if (config_.task == TaskType::kConvertModel) {
     ConvertModel();
   } else {
     InitTrain();
